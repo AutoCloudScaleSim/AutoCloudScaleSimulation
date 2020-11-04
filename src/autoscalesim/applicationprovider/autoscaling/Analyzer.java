@@ -10,17 +10,16 @@
  */
 package autoscalesim.applicationprovider.autoscaling;
 
-import autoscalesim.applicationprovider.autoscaling.analyzerMethod.TripleExponentialSmoothing;
 import autoscalesim.applicationprovider.autoscaling.knowledgebase.AnalyzerHistory;
-
+import autoscalesim.applicationprovider.ApplicationProvider;
 import static autoscalesim.applicationprovider.ApplicationProvider.getMonitor;
 import autoscalesim.applicationprovider.autoscaling.knowledgebase.MonitorEndUserHistory;
+import autoscalesim.log.DateTime;
 import autoscalesim.applicationprovider.autoscaling.knowledgebase.MonitorSLAHistory;
 import autoscalesim.applicationprovider.autoscaling.knowledgebase.MonitorVmHistory;
 import static autoscalesim.log.ExperimentalResult.error;
 import static autoscalesim.log.ExperimentalResult.errorChecker;;
 import java.util.ArrayList;
-
 import org.cloudbus.cloudsim.Log;
 /**
  * Analyzer class is the second phase of auto-scaling, where the monitored parameters are analyzed.
@@ -778,19 +777,6 @@ public class Analyzer {
             oldSESOutput = parameter;
         
         return (alpha * parameter) + ((1 - alpha) * oldSESOutput);
-    }
-
-    /**
-
-     */
-    private double calculateTripleExponentialSmoothing(double[] parameterList,double alpha , double beta, double gamma,int period,int nPredictions){
-        boolean debug=false;
-        ArrayList<Double> data=new ArrayList<>();
-        for(double d: parameterList){
-            data.add(d);
-        }
-        ArrayList<Double> predictions= (ArrayList<Double>) TripleExponentialSmoothing.forecast(data,alpha,beta,gamma,period,nPredictions,debug);
-        return predictions.get(parameterList.length+nPredictions-1);
     }
     
     /**

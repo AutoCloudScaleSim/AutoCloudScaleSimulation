@@ -11,16 +11,19 @@
 
 package autoscalesim.enduser;
 
+import org.cloudbus.cloudsim.CloudSimTags;
+import autoscalesim.enduser.Cloudlet;
 import autoscalesim.log.AutoScaleSimTags;
 import autoscalesim.log.AutoScaleSimTags.DATASET;
-import org.cloudbus.cloudsim.Log;
-import org.cloudbus.cloudsim.UtilizationModel;
-import org.cloudbus.cloudsim.UtilizationModelFull;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.SimEntity;
 import org.cloudbus.cloudsim.core.SimEvent;
+import org.cloudbus.cloudsim.Log;
+import org.cloudbus.cloudsim.UtilizationModel;
+import org.cloudbus.cloudsim.UtilizationModelFull;
 import org.neuroph.core.data.DataSet;
-
+import static autoscalesim.log.ExperimentalResult.error;
+import static autoscalesim.log.ExperimentalResult.errorChecker;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;

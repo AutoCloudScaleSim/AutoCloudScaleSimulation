@@ -12,39 +12,50 @@
 package autoscalesim.applicationprovider;
 
 import autoscalesim.ExperimentalSetup;
-import autoscalesim.applicationprovider.autoscaling.Analyzer;
-import autoscalesim.applicationprovider.autoscaling.Executor;
-import autoscalesim.applicationprovider.autoscaling.Monitor;
-import autoscalesim.applicationprovider.autoscaling.Planner;
-import autoscalesim.applicationprovider.loadmanager.LoadAdmission;
-import autoscalesim.applicationprovider.loadmanager.LoadBalancing;
-import autoscalesim.cloudprovider.DatacenterCharacteristics;
-import autoscalesim.cloudprovider.Vm;
-import autoscalesim.enduser.Cloudlet;
-import autoscalesim.log.AutoScaleSimTags;
-import autoscalesim.log.AutoScaleSimTags.DATASET;
-import autoscalesim.log.DateTime;
-import autoscalesim.log.ExperimentalResult;
 import autoscalesim.log.LogAutoscaler;
 import org.cloudbus.cloudsim.CloudSimTags;
-import org.cloudbus.cloudsim.Log;
+import autoscalesim.cloudprovider.DatacenterCharacteristics;
+import autoscalesim.cloudprovider.CloudProvider;
+import autoscalesim.enduser.Cloudlet;
+import autoscalesim.applicationprovider.autoscaling.Analyzer;
+import autoscalesim.log.AutoScaleSimTags;
+import autoscalesim.cloudprovider.Vm;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Iterator;
+import java.util.Map;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.SimEntity;
 import org.cloudbus.cloudsim.core.SimEvent;
 import org.cloudbus.cloudsim.lists.CloudletList;
 import org.cloudbus.cloudsim.lists.VmList;
-
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import autoscalesim.log.DateTime;
+import autoscalesim.applicationprovider.autoscaling.ExecutorSimple;
+import autoscalesim.applicationprovider.autoscaling.ExecutorSuperProfessional;
+import org.cloudbus.cloudsim.Log;
+import org.neuroph.core.NeuralNetwork;
+import autoscalesim.applicationprovider.autoscaling.Monitor;
+import autoscalesim.applicationprovider.autoscaling.PlannerRuleBased;
+import autoscalesim.applicationprovider.loadmanager.LoadAdmission;
+import autoscalesim.applicationprovider.autoscaling.Executor;
+import autoscalesim.applicationprovider.autoscaling.Planner;
+import autoscalesim.applicationprovider.loadmanager.LoadBalancing;
+import autoscalesim.enduser.EndUserEmulator;
+import static autoscalesim.enduser.EndUserEmulator.MAX_CLOUDLET_LENGTH;
+import static autoscalesim.enduser.EndUserEmulator.MIN_CLOUDLET_LENGTH;
+import autoscalesim.log.AutoScaleSimTags.DATASET;
 import static autoscalesim.log.AutoScaleSimTags.oneTab;
 import static autoscalesim.log.AutoScaleSimTags.twoTabs;
+import autoscalesim.log.ExperimentalResult;
 import static autoscalesim.log.ExperimentalResult.error;
 import static autoscalesim.log.ExperimentalResult.errorChecker;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static org.cloudbus.cloudsim.lists.VmList.getAvailableVmListToLoadBalancing;
 import static org.cloudbus.cloudsim.lists.VmList.getVmsList;
-
 /**
  * Application Provider(AP) class represents a broker acting on behalf of a user. AP rents VMs from 
  * Cloud Provider, hosts its Web application on the VMs and then lets users send their requests to
