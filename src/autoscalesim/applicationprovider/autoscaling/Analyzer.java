@@ -10,6 +10,7 @@
  */
 package autoscalesim.applicationprovider.autoscaling;
 
+import autoscalesim.applicationprovider.autoscaling.analyzerMethod.TripleExponentialSmoothing;
 import autoscalesim.applicationprovider.autoscaling.knowledgebase.AnalyzerHistory;
 import autoscalesim.applicationprovider.ApplicationProvider;
 import static autoscalesim.applicationprovider.ApplicationProvider.getMonitor;
@@ -778,7 +779,17 @@ public class Analyzer {
         
         return (alpha * parameter) + ((1 - alpha) * oldSESOutput);
     }
-    
+
+    private double calculateTripleExponentialSmoothing(double[] parameterList,double alpha , double beta, double gamma,int period,int nPredictions){
+        boolean debug=false;
+        ArrayList<Double> data=new ArrayList<>();
+        for(double d: parameterList){
+            data.add(d);
+        }
+        ArrayList<Double> predictions= (ArrayList<Double>) TripleExponentialSmoothing.forecast(data,alpha,beta,gamma,period,nPredictions,debug);
+        return predictions.get(parameterList.length+nPredictions-1);
+    }
+
     /**
      * Gets analyzing method
      * @return 
