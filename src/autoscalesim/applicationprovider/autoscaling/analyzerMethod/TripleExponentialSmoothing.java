@@ -14,6 +14,7 @@ import java.util.ArrayList;
  *
  */
 public class TripleExponentialSmoothing {
+    public ArrayList<Double> predictedUpperBound=new ArrayList<>();
 
     /**
      * Calculates the initial values and
@@ -38,7 +39,8 @@ public class TripleExponentialSmoothing {
      * @param debug - Print debug values.
      *
      */
-    public static List<Double> forecast(List<Double> y, double alpha, double beta,
+
+    public List<Double> forecast(List<Double> y, double alpha, double beta,
                                         double gamma, int period, int m, boolean debug) {
 
         validateArguments(y, alpha, beta, gamma, period, m);
@@ -52,21 +54,21 @@ public class TripleExponentialSmoothing {
         List<Double> initialSeasonalIndices = calculateSeasonalIndices(y, period,
                 seasons);
 
-//        if (debug) {
-//            System.out.println(String.format(
-//                    "Total observations: %d, Seasons %d, Periods %d", y.size(),
-//                    seasons, period));
-//            System.out.println("Initial level value a0: " + a0);
-//            System.out.println("Initial trend value b0: " + b0);
-//            printArray("Seasonal Indices: ", initialSeasonalIndices);
-//        }
+        if (debug) {
+            System.out.println(String.format(
+                    "Total observations: %d, Seasons %d, Periods %d", y.size(),
+                    seasons, period));
+            System.out.println("Initial level value a0: " + a0);
+            System.out.println("Initial trend value b0: " + b0);
+            System.out.println("Seasonal Indices: "+ initialSeasonalIndices);
+        }
 
         List<Double> forecast = calculateHoltWinters(y, a0, b0, alpha, beta, gamma,
-                initialSeasonalIndices, period, m, debug);
+                initialSeasonalIndices, period, m,1.96, debug);
 
-//        if (debug) {
-//            printArray("Forecast", forecast);
-//        }
+        if (debug) {
+            System.out.println("Forecast"+ forecast);
+        }
 
         return forecast;
     }
@@ -80,7 +82,7 @@ public class TripleExponentialSmoothing {
      * @param gamma
      * @param m
      */
-    private static void validateArguments(List<Double> y, double alpha, double beta,
+    private void validateArguments(List<Double> y, double alpha, double beta,
                                           double gamma, int period, int m) {
         if (y == null) {
             throw new IllegalArgumentException("Value of y should be not null");
@@ -110,81 +112,96 @@ public class TripleExponentialSmoothing {
     /**
      * This method realizes the Holt-Winters equations.
      *
-     * @param y
+     * @param series
      * @param a0
      * @param b0
      * @param alpha
      * @param beta
      * @param gamma
-     * @param initialSeasonalIndices
+     * @param seasonals
      * @param period
-     * @param m
+     * @param nPreds
      * @param debug
      * @return - Forecast for m periods.
      */
-    private static List<Double> calculateHoltWinters(List<Double> y, double a0, double b0,
-                                                     double alpha, double beta, double gamma,
-                                                     List<Double> initialSeasonalIndices, int period, int m, boolean debug) {
+    public List<Double> calculateHoltWinters(List<Double> series, double a0, double b0,
+                                                    double alpha, double beta, double gamma,
+                                                    List<Double> seasonals, int period, int nPreds,double scalingFactor, boolean debug){
 
-        List<Double> level = new ArrayList<Double>(y.size());
-        while(level.size()<y.size()) level.add(0.0);
+        ArrayList<Double> predictions=new ArrayList<>();
+        ArrayList<Double> levels=new ArrayList<>();
+        ArrayList<Double> trends=new ArrayList<>();
+        ArrayList<Double> seasons=new ArrayList<>();
+        ArrayList<Double> predictedDeviations=new ArrayList<>();
+        ArrayList<Double> upperBound=new ArrayList<>();
 
-        List<Double> trend = new ArrayList<Double>(y.size());
-        while(trend.size()<y.size()) trend.add(0.0);
+        double level=0.0,trend=0.0;
+        for(int i =0;i<series.size()+nPreds;i++){
+            double prediction,deviations;
+            // initializations
+            if(i==0){
+                level=a0;
+                trend=b0;
+                prediction=series.get(0);
+                deviations=0.0;
 
-        List<Double> seasonality = new ArrayList<Double>(y.size());
-        while(seasonality.size()<y.size()) seasonality.add(0.0);
+                predictions.add(prediction);
+                levels.add(level);
+                trends.add(trend);
+                seasons.add(seasonals.get(i%period));
+                predictedDeviations.add(deviations);
+                upperBound.add(calculateUpperbound(prediction,deviations,scalingFactor));
+                continue;
+            }
+            // training
+            else if(i<series.size()){
+                double val=series.get(i);
+                double lastLevel=level,lastTrend=trend;
+                level=alpha*(val-seasonals.get(i%period)) + (1-alpha)*(lastLevel+lastTrend);
+                trend = beta * (level-lastLevel) + (1-beta)*lastTrend;
+                double seasonal = gamma*(val-level) + (1-gamma)*seasonals.get(i%period);
+                prediction=level+trend+seasonal;
+                deviations=calculatePredictedDeviations(val,prediction,predictedDeviations.get(i-1),gamma);
 
-        List<Double> predictions = new ArrayList<Double>(y.size() + m);
-        while(predictions.size()<y.size() + m) predictions.add(0.0);
+                seasonals.set(i%period,seasonal);
+                predictions.add(prediction);
+                predictedDeviations.add(deviations);
+            }
+            // predicting
+            else{
+                int m=i-series.size()+1;
+                prediction=level+m*trend+seasonals.get(i%period);
+                deviations=predictedDeviations.get(predictedDeviations.size()-1)*1.01;
+                predictions.add(prediction);
+                predictedDeviations.add(deviations);
+            }
+            double ub=calculateUpperbound(prediction,deviations,scalingFactor);
+            upperBound.add(ub);
 
-        // Initialize base values
-        level.add(1, a0);
-        trend.add(1, b0);
-
-        for (int i = 0; i < period; i++) {
-            seasonality.set(i,initialSeasonalIndices.get(i));
         }
+        predictedUpperBound=upperBound;
+        return  predictions;
+    }
 
-        // Start calculations
-        for (int i = 2; i < y.size(); i++) {
+    /**
+     * @return - calculate predictedDeviations
+     */
+    private double calculatePredictedDeviations(double actualValue,double predictedValue,double lastPredictedDeviations,double gamma){
+        return  gamma*Math.abs(actualValue-predictedValue)+(1-gamma)*lastPredictedDeviations;
+    }
 
-            // Calculate overall smoothing
-            if ((i - period) >= 0) {
-                level.set(i, alpha * y.get(i) - seasonality.get(i - period) + (1.0 - alpha)
-                        * (level.get(i - 1) + trend.get(i - 1)));
-            } else {
-                level.set(i, alpha * y.get(i) + (1.0 - alpha) * (level.get(i - 1) + trend.get(i - 1)));
-            }
-
-            // Calculate trend smoothing
-            trend.set(i, beta * (level.get(i) - level.get(i - 1)) + (1 - beta) * trend.get(i - 1));
-
-            // Calculate seasonal smoothing
-            if ((i - period) >= 0) {
-                seasonality.set(i, gamma * y.get(i) - level.get(i) + (1.0 - gamma) * seasonality.get(i - period));
-            }
-
-            // Calculate forecast
-            if (((i + m) >= period)) {
-                predictions.set(i+m, (level.get(i) + m * trend.get(i)) * seasonality.get(i - period + m));
-            }
-
-//            if (debug) {
-//                System.out.println(String.format(
-//                        "i = %d, y = %d, S = %f, Bt = %f, It = %f, F = %f", i,
-//                        Math.round(y.get(i)), level.get(i), trend.get(i), seasonality.get(i), predictions.get(i)));
-//            }
-        }
-
-        return predictions;
+    /**
+     * @return - Calculate upperbound of predictions
+     */
+    private double calculateUpperbound(double predictedValue,double predictedDeviations,double scalingFactor){
+        return predictedValue+scalingFactor*predictedDeviations;
     }
 
     /**
      *
      * @return - Initial Level value i.e. St[1]
      */
-    private static double calculateInitialLevel(List<Double> y) {
+    private double calculateInitialLevel(List<Double> y) {
         return y.get(0);
     }
 
@@ -192,7 +209,7 @@ public class TripleExponentialSmoothing {
      *
      * @return - Initial trend - Bt[1]
      */
-    private static double calculateInitialTrend(List<Double> y, int period) {
+    private double calculateInitialTrend(List<Double> y, int period) {
 
         double sum = 0;
 
@@ -207,7 +224,7 @@ public class TripleExponentialSmoothing {
      *
      * @return - Seasonal Indices.
      */
-    private static List<Double> calculateSeasonalIndices(List<Double> y, int period,
+    private List<Double> calculateSeasonalIndices(List<Double> y, int period,
                                                          int seasons) {
 
         double[] seasonalAverage = new double[seasons];
