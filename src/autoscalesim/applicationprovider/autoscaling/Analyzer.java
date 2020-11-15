@@ -1058,7 +1058,7 @@ public class Analyzer {
         boolean debug=false;
         ArrayList<Double> data=new ArrayList<>();
         for(double d: parameterList){
-            data.add(d+0.0000001);
+            data.add(d+0.00000001);
         }
         TripleExponentialSmoothing tes=new TripleExponentialSmoothing();
         ArrayList<Double> predictions= (ArrayList<Double>) tes.forecast(data,alpha,beta,gamma,period,nPredictions,debug);
@@ -1079,7 +1079,7 @@ public class Analyzer {
         for(int i=parameterList.length;i<parameterList.length+nPredictions;i++){
             predictedUpperbound.add(tes.predictedUpperBound.get(i));
         }
-        double prediction=calculateAverage(predictedUpperbound);
+        double prediction=calculateFibonacciWeightedMovingAverage(predictedUpperbound);
         return  prediction;
 
     }
@@ -1097,7 +1097,7 @@ public class Analyzer {
         for(int i=parameterList.length;i<parameterList.length+nPredictions;i++){
             predictedValues.add(predictions.get(i));
         }
-        double prediction=calculateAverage(predictedValues);
+        double prediction=calculateFibonacciWeightedMovingAverage(predictedValues);
         return  prediction;
 
     }
