@@ -11,6 +11,8 @@
 package autoscalesim.applicationprovider.autoscaling;
 
 import autoscalesim.applicationprovider.autoscaling.analyzerMethod.TripleExponentialSmoothing;
+import autoscalesim.applicationprovider.autoscaling.analyzerMethod.TripleExponentialSmoothingConstant;
+import autoscalesim.applicationprovider.autoscaling.analyzerMethod.TripleExponentialSmoothingConstantTuning;
 import autoscalesim.applicationprovider.autoscaling.knowledgebase.AnalyzerHistory;
 import autoscalesim.applicationprovider.ApplicationProvider;
 import static autoscalesim.applicationprovider.ApplicationProvider.getMonitor;
@@ -21,6 +23,7 @@ import autoscalesim.applicationprovider.autoscaling.knowledgebase.MonitorVmHisto
 import static autoscalesim.log.ExperimentalResult.error;
 import static autoscalesim.log.ExperimentalResult.errorChecker;;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.cloudbus.cloudsim.Log;
@@ -44,6 +47,23 @@ public class Analyzer {
     private double gamma=0.60;
     private int period=1440;
     private int nPred=30;
+
+    private TripleExponentialSmoothingConstant[] TES_CONSTANTS= {
+            new TripleExponentialSmoothingConstant(false), //ANLZ_CPUUtil
+            new TripleExponentialSmoothingConstant(false) , //ANLZ_VMCount
+            new TripleExponentialSmoothingConstant(false) , //ANLZ_Throughput
+            new TripleExponentialSmoothingConstant(false) , //ANLZ_ResponseTime
+            new TripleExponentialSmoothingConstant(false) , //ANLZ_DelayTime
+            new TripleExponentialSmoothingConstant(false) , //ANLZ_SLAVCount
+            new TripleExponentialSmoothingConstant(false) , //ANLZ_SLAVPercentage
+            new TripleExponentialSmoothingConstant(false) , //ANLZ_SLAVTime
+            new TripleExponentialSmoothingConstant(false) , //ANLZ_FailedCloudlet
+            new TripleExponentialSmoothingConstant(false) , //ANLZ_FutureWorkload
+    };
+
+    private int TES_PERIOD=1440;
+    private int TES_nPREDICTIONS=30;
+
 
     /**
      * 
@@ -91,7 +111,7 @@ public class Analyzer {
         // Env. parameters have been set already.
         
 /* calculation of analysis parameters */
-        
+
         // RESOURCE-AWARE
         cpuUtilization = ANLZ_CPUUtil(); 
         vmCount = ANLZ_VMCount();
@@ -181,36 +201,8 @@ public class Analyzer {
                 analyzedCPUUtilization = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[0]);
                 oldSESOutput = analyzedCPUUtilization;
                 break;
-            case "TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedCPUUtilization = parameter;//calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[0]);
-                else
-                    analyzedCPUUtilization =calculateTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-
-                oldSESOutput = analyzedCPUUtilization;
-                break;
-            case "TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedCPUUtilization=parameter;
-                else
-                    analyzedCPUUtilization =calculateTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedCPUUtilization=parameter;
-                else
-                    analyzedCPUUtilization =calculateAverageTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedCPUUtilization=parameter;
-                else
-                    analyzedCPUUtilization =calculateAverageTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
             default:
-                errorChecker = true;
-                error += "Error in Analyzer class- resource aware analayzer - cpu utilization analysis method not found";
-                Log.printLine("Error in Analyzer class- resource aware analayzer - cpu utilization analysis method not found");
+                analyzedCPUUtilization=TripleExponentialSmoothingVariant(AnalyzerParameter.CPUUtil,tesHistory,parameter);
         }
         
         return analyzedCPUUtilization;
@@ -267,34 +259,8 @@ public class Analyzer {
                 analyzedVmCount = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[1]);
                 oldSESOutput = analyzedVmCount;
                 break;
-            case "TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedVmCount =parameter;// calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[0]);
-                else
-                    analyzedVmCount =calculateTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedVmCount=parameter;
-                else
-                    analyzedVmCount =calculateTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedVmCount=parameter;
-                else
-                    analyzedVmCount =calculateAverageTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedVmCount=parameter;
-                else
-                    analyzedVmCount =calculateAverageTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
             default:
-                errorChecker = true;
-                error += "Error in Analyzer class- resource aware analayzer - VM count analysis method not found";
-                Log.printLine("Error in Analyzer class- resource aware analayzer - VM count analysis method not found");
+                analyzedVmCount=TripleExponentialSmoothingVariant(AnalyzerParameter.VMCount,tesHistory,parameter);
         }
         
         return analyzedVmCount;
@@ -351,34 +317,8 @@ public class Analyzer {
                 analyzedThroughput = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[2]);
                 oldSESOutput = analyzedThroughput;
                 break;
-            case "TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedThroughput =parameter;// calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[0]);
-                else
-                    analyzedThroughput =calculateTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedThroughput=parameter;
-                else
-                    analyzedThroughput =calculateTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedThroughput=parameter;
-                else
-                    analyzedThroughput =calculateAverageTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedThroughput=parameter;
-                else
-                    analyzedThroughput =calculateAverageTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
             default:
-                errorChecker = true;
-                error += "Error in Analyzer class- resource aware analayzer - Throughout analysis method not found";
-                Log.printLine("Error in Analyzer class- resource aware analayzer - Throughout analysis method not found");
+                analyzedThroughput=TripleExponentialSmoothingVariant(AnalyzerParameter.Throughput,tesHistory,parameter);
         }
         return analyzedThroughput;
     }
@@ -435,34 +375,8 @@ public class Analyzer {
                 analyzedResponseTime = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[3]);
                 oldSESOutput = analyzedResponseTime;
                 break;
-            case "TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedResponseTime =parameter;// calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[0]);
-                else
-                    analyzedResponseTime =calculateTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedResponseTime=parameter;
-                else
-                    analyzedResponseTime =calculateTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedResponseTime=parameter;
-                else
-                    analyzedResponseTime =calculateAverageTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedResponseTime=parameter;
-                else
-                    analyzedResponseTime =calculateAverageTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
             default:
-                errorChecker = true;
-                error += "Error in Analyzer class- resource aware analayzer - Response Time analysis method not found";
-                Log.printLine("Error in Analyzer class- resource aware analayzer - Response Time analysis method not found");
+                analyzedResponseTime=TripleExponentialSmoothingVariant(AnalyzerParameter.ResponseTime,tesHistory,parameter);
         }
         return analyzedResponseTime;
     }
@@ -519,34 +433,8 @@ public class Analyzer {
                 analyzedDelayTime = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[4]);
                 oldSESOutput = analyzedDelayTime;
                 break;
-            case "TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedDelayTime =parameter;// calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[0]);
-                else
-                    analyzedDelayTime =calculateTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedDelayTime=parameter;
-                else
-                    analyzedDelayTime =calculateTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedDelayTime=parameter;
-                else
-                    analyzedDelayTime =calculateAverageTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedDelayTime=parameter;
-                else
-                    analyzedDelayTime =calculateAverageTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
             default:
-                errorChecker = true;
-                error += "Error in Analyzer class- resource aware analayzer - Delay Time analysis method not found";
-                Log.printLine("Error in Analyzer class- resource aware analayzer - Delay Time analysis method not found");
+                analyzedDelayTime=TripleExponentialSmoothingVariant(AnalyzerParameter.DelayTime,tesHistory,parameter);
         }
         return analyzedDelayTime;
     }
@@ -603,34 +491,8 @@ public class Analyzer {
                 analyzedSLAVCount = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[5]);
                 oldSESOutput = analyzedSLAVCount;
                 break;
-            case "TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedSLAVCount =parameter;// calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[0]);
-                else
-                    analyzedSLAVCount =calculateTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedSLAVCount=parameter;
-                else
-                    analyzedSLAVCount =calculateTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedSLAVCount=parameter;
-                else
-                    analyzedSLAVCount =calculateAverageTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedSLAVCount=parameter;
-                else
-                    analyzedSLAVCount =calculateAverageTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
             default:
-                errorChecker = true;
-                error += "Error in Analyzer class- resource aware analayzer - SLA Violation Count analysis method not found";
-                Log.printLine("Error in Analyzer class- resource aware analayzer - SLA Violation Count analysis method not found");
+                analyzedSLAVCount=TripleExponentialSmoothingVariant(AnalyzerParameter.SLAVCount,tesHistory,parameter);
         }
         
         return analyzedSLAVCount;
@@ -688,34 +550,8 @@ public class Analyzer {
                 analyzedSLAVPercentage = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[6]);
                 oldSESOutput = analyzedSLAVPercentage;
                 break;
-            case "TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedSLAVPercentage =parameter;// calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[0]);
-                else
-                    analyzedSLAVPercentage =calculateTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedSLAVPercentage=parameter;
-                else
-                    analyzedSLAVPercentage =calculateTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedSLAVPercentage=parameter;
-                else
-                    analyzedSLAVPercentage =calculateAverageTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedSLAVPercentage=parameter;
-                else
-                    analyzedSLAVPercentage =calculateAverageTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
             default:
-                errorChecker = true;
-                error += "Error in Analyzer class- resource aware analayzer - SLA Violation Percent analysis method not found";
-                Log.printLine("Error in Analyzer class- resource aware analayzer - SLA Violation Percent analysis method not found");
+                analyzedSLAVPercentage=TripleExponentialSmoothingVariant(AnalyzerParameter.SLAVPercentage,tesHistory,parameter);
         }
         return analyzedSLAVPercentage;
     }
@@ -772,34 +608,8 @@ public class Analyzer {
                 analyzedSLAVTime = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[7]);
                 oldSESOutput = analyzedSLAVTime;
                 break;
-            case "TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedSLAVTime =parameter ;//calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[0]);
-                else
-                    analyzedSLAVTime =calculateTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedSLAVTime=parameter;
-                else
-                    analyzedSLAVTime =calculateTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedSLAVTime=parameter;
-                else
-                    analyzedSLAVTime =calculateAverageTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedSLAVTime=parameter;
-                else
-                    analyzedSLAVTime =calculateAverageTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
             default:
-                errorChecker = true;
-                error += "Error in Analyzer class- resource aware analayzer - SLA Violation Time analysis method not found";
-                Log.printLine("Error in Analyzer class- resource aware analayzer - SLA Violation Time analysis method not found");
+                analyzedSLAVTime=TripleExponentialSmoothingVariant(AnalyzerParameter.SLAVTime,tesHistory,parameter);
         }
         
         return analyzedSLAVTime;
@@ -857,35 +667,8 @@ public class Analyzer {
                 analyzedFailedCloudlet = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[8]);
                 oldSESOutput = analyzedFailedCloudlet;
                 break;
-            case "TES":
-                if(parameterList.length < this.tesStartLimit)
-
-                    analyzedFailedCloudlet =parameter ;
-                else
-                    analyzedFailedCloudlet =calculateTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedFailedCloudlet=parameter;
-                else
-                    analyzedFailedCloudlet =calculateTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedFailedCloudlet=parameter;
-                else
-                    analyzedFailedCloudlet =calculateAverageTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedFailedCloudlet=parameter;
-                else
-                    analyzedFailedCloudlet =calculateAverageTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
             default:
-                errorChecker = true;
-                error += "Error in Analyzer class- resource aware analayzer - Failed Cloudlet analysis method not found";
-                Log.printLine("Error in Analyzer class- resource aware analayzer - Failed Cloudlet analysis method not found");
+                analyzedFailedCloudlet=TripleExponentialSmoothingVariant(AnalyzerParameter.FailedCloudlet,tesHistory,parameter);
         }
         
         return analyzedFailedCloudlet;
@@ -916,8 +699,8 @@ public class Analyzer {
             parameterList[i] = tmpEndUserHistoryList.get(sizeEndUserHistory - 1 - i).getRequestsPerAllTier();
             tesHistory[i] = tmpEndUserHistoryList.get(sizeEndUserHistory-window + i).getRequestsPerAllTier();
         }
-        
-                     
+
+
         //Index 9 of AnalysisMethod variable indicates the analyzing method for analyzing 'Future Workload'
         switch(getAnalysisMethod()[9]){
             //Simple
@@ -943,43 +726,67 @@ public class Analyzer {
                 analyzedFutureWorkload = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[9]);
                 oldSESOutput = analyzedFutureWorkload;
                 break;
-            case "TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedFutureWorkload=parameter;
-                else
-                    analyzedFutureWorkload =calculateTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedFutureWorkload=parameter;
-                else
-                    analyzedFutureWorkload =calculateTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedFutureWorkload=parameter;
-                else
-                    analyzedFutureWorkload =calculateAverageTripleExponentialSmoothing(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
-            case "AVERAGE_TES_UPPERBOUND":
-                if(parameterList.length < this.tesStartLimit)
-                    analyzedFutureWorkload=parameter;
-                else
-                    analyzedFutureWorkload =calculateAverageTripleExponentialSmoothingUsingUpperBound(tesHistory,alpha,beta,gamma,period,nPred);
-                break;
             default:
-                errorChecker = true;
-                error += "Error in Analyzer class- resource aware analayzer - Future Workload analysis method not found";
-                Log.printLine("Error in Analyzer class- resource aware analayzer - Future Workload analysis method not found");
+                analyzedFutureWorkload=TripleExponentialSmoothingVariant(AnalyzerParameter.FutureWorkload,tesHistory,parameter);
         }
         return analyzedFutureWorkload;
     }
     
     /**
      * Analyzes the indicated parameter by Moving Average method
-     * @param parameterList
+     * @param history
      * @return 
      */
+
+    private double TripleExponentialSmoothingVariant(AnalyzerParameter analyzerParameter,double[] history, double parameter){
+        ArrayList<Double> data=new ArrayList<>();
+        for(double d: history){
+            data.add(d+0.0000001);
+        }
+        double analyzedValue = -1;
+        int index=analyzerParameter.getIndex();
+
+        // adapting
+        if(history.length >= this.tesStartLimit){
+            TES_CONSTANTS[index]=new TripleExponentialSmoothingConstantTuning(TES_CONSTANTS[index]).getBestFittedConstant(data,TES_PERIOD);
+        }
+        TripleExponentialSmoothingConstant tesConst= TES_CONSTANTS[index];
+
+        switch (getAnalysisMethod()[index]){
+            case "TES":
+                if(history.length < this.tesStartLimit)
+                    analyzedValue=parameter;
+                else
+                    analyzedValue =calculateTripleExponentialSmoothing(data,tesConst,TES_PERIOD,TES_nPREDICTIONS);
+                break;
+            case "TES_UPPERBOUND":
+                if(history.length < this.tesStartLimit)
+                    analyzedValue=parameter;
+                else
+                    analyzedValue =calculateTripleExponentialSmoothingUsingUpperBound(data,tesConst,TES_PERIOD,TES_nPREDICTIONS);
+                break;
+            case "AVERAGE_TES":
+                if(history.length < this.tesStartLimit)
+                    analyzedValue=parameter;
+                else
+                    analyzedValue =calculateAverageTripleExponentialSmoothing(data,tesConst,TES_PERIOD,TES_nPREDICTIONS);
+                break;
+            case "AVERAGE_TES_UPPERBOUND":
+                if(history.length < this.tesStartLimit)
+                    analyzedValue=parameter;
+                else
+                    analyzedValue =calculateAverageTripleExponentialSmoothingUsingUpperBound(data,tesConst, TES_PERIOD,TES_nPREDICTIONS);
+                break;
+            default:
+                errorChecker = true;
+                error += "Error in Analyzer class- resource aware analayzer - Future Workload analysis method not found";
+                Log.printLine("Error in Analyzer class- resource aware analayzer - Future Workload analysis method not found");
+        }
+//        double[] parameterList,TripleExponentialSmoothingConstant tesConst,int period,int nPredictions
+        return  analyzedValue;
+    }
+
+
     private double calculateMovingAverage(double[] parameterList){
         double sumMovingAverage = 0;
         for(int i = 0; i < parameterList.length; i++){
@@ -1042,41 +849,29 @@ public class Analyzer {
         return (alpha * parameter) + ((1 - alpha) * oldSESOutput);
     }
 
-    private double calculateTripleExponentialSmoothing(double[] parameterList,double alpha , double beta, double gamma,int period,int nPredictions){
+    private double calculateTripleExponentialSmoothing(List<Double> data,TripleExponentialSmoothingConstant tesConst,int period,int nPredictions){
 
         boolean debug=false;
-        ArrayList<Double> data=new ArrayList<>();
-        for(double d: parameterList){
-            data.add(d+0.0000001);
-        }
         TripleExponentialSmoothing tes=new TripleExponentialSmoothing();
-        ArrayList<Double> predictions= (ArrayList<Double>) tes.forecast(data,alpha,beta,gamma,period,nPredictions,debug);
-        return predictions.get(parameterList.length+15);
+        ArrayList<Double> predictions= (ArrayList<Double>) tes.forecast(data,tesConst,period,nPredictions,debug);
+        return predictions.get(data.size()+15);
     }
 
-    private double calculateTripleExponentialSmoothingUsingUpperBound(double[] parameterList,double alpha , double beta, double gamma,int period,int nPredictions){
+    private double calculateTripleExponentialSmoothingUsingUpperBound(List<Double> data,TripleExponentialSmoothingConstant tesConst,int period,int nPredictions){
         boolean debug=false;
-        ArrayList<Double> data=new ArrayList<>();
-        for(double d: parameterList){
-            data.add(d+0.00000001);
-        }
         TripleExponentialSmoothing tes=new TripleExponentialSmoothing();
-        ArrayList<Double> predictions= (ArrayList<Double>) tes.forecast(data,alpha,beta,gamma,period,nPredictions,debug);
+        ArrayList<Double> predictions= (ArrayList<Double>) tes.forecast(data,tesConst,period,nPredictions,debug);
 
-        return tes.predictedUpperBound.get(parameterList.length+nPredictions-5);
+        return tes.predictedUpperBound.get(data.size()+nPredictions-5);
     }
 
-    private double calculateAverageTripleExponentialSmoothingUsingUpperBound(double[] parameterList,double alpha , double beta, double gamma,int period,int nPredictions){
+    private double calculateAverageTripleExponentialSmoothingUsingUpperBound(List<Double> data,TripleExponentialSmoothingConstant tesConst,int period,int nPredictions){
         boolean debug=false;
-        ArrayList<Double> data=new ArrayList<>();
-        for(double d: parameterList){
-            data.add(d+0.0000001);
-        }
         TripleExponentialSmoothing tes=new TripleExponentialSmoothing();
-        ArrayList<Double> predictions= (ArrayList<Double>) tes.forecast(data,alpha,beta,gamma,period,nPredictions,debug);
+        ArrayList<Double> predictions= (ArrayList<Double>) tes.forecast(data,tesConst,period,nPredictions,debug);
 
         ArrayList<Double> predictedUpperbound=new ArrayList<>();
-        for(int i=parameterList.length;i<parameterList.length+nPredictions;i++){
+        for(int i=data.size();i<data.size()+nPredictions;i++){
             predictedUpperbound.add(tes.predictedUpperBound.get(i));
         }
         double prediction=calculateFibonacciWeightedMovingAverage(predictedUpperbound);
@@ -1084,17 +879,13 @@ public class Analyzer {
 
     }
 
-    private double calculateAverageTripleExponentialSmoothing(double[] parameterList,double alpha , double beta, double gamma,int period,int nPredictions){
+    private double calculateAverageTripleExponentialSmoothing(List<Double> data,TripleExponentialSmoothingConstant tesConst,int period,int nPredictions){
         boolean debug=false;
-        ArrayList<Double> data=new ArrayList<>();
-        for(double d: parameterList){
-            data.add(d+0.0000001);
-        }
         TripleExponentialSmoothing tes=new TripleExponentialSmoothing();
-        ArrayList<Double> predictions= (ArrayList<Double>) tes.forecast(data,alpha,beta,gamma,period,nPredictions,debug);
+        ArrayList<Double> predictions= (ArrayList<Double>) tes.forecast(data,tesConst,period,nPredictions,debug);
 
         ArrayList<Double> predictedValues=new ArrayList<>();
-        for(int i=parameterList.length;i<parameterList.length+nPredictions;i++){
+        for(int i=data.size();i<data.size()+nPredictions;i++){
             predictedValues.add(predictions.get(i));
         }
         double prediction=calculateFibonacciWeightedMovingAverage(predictedValues);
@@ -1187,6 +978,26 @@ public class Analyzer {
      */
     public AnalyzerHistory latestHistoryRec(){
         return getHistoryList().get(sizeHistory()-1);
+    }
+
+    public enum AnalyzerParameter{
+        CPUUtil(0),
+        VMCount(1),
+        Throughput(2),
+        ResponseTime(3),
+        DelayTime(4),
+        SLAVCount(5),
+        SLAVPercentage(6),
+        SLAVTime(7),
+        FailedCloudlet(8),
+        FutureWorkload(9);
+        int index;
+        AnalyzerParameter(int i) {
+            index = i;
+        }
+        int getIndex(){
+         return index;
+        }
     }
 
 }
