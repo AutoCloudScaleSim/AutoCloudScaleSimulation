@@ -4,3 +4,4 @@
 /out/
 .idea/
 /src/others/
+*.iml
