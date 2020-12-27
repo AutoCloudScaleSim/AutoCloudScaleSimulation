@@ -40,8 +40,11 @@ public class TripleExponentialSmoothing {
      *
      */
 
-    public List<Double> forecast(List<Double> y, double alpha, double beta,
-                                        double gamma, int period, int m, boolean debug) {
+    public List<Double> forecast(List<Double> y,TripleExponentialSmoothingConstant tesConst, int period, int m, boolean debug) {
+
+        double alpha= tesConst.alpha;
+        double beta= tesConst.beta;
+        double gamma= tesConst.gamma;
 
         validateArguments(y, alpha, beta, gamma, period, m);
         int seasons = y.size() / period;
@@ -86,10 +89,6 @@ public class TripleExponentialSmoothing {
                                           double gamma, int period, int m) {
         if (y == null) {
             throw new IllegalArgumentException("Value of y should be not null");
-        }
-
-        if(m <= 0){
-            throw new IllegalArgumentException("Value of m must be greater than 0.");
         }
 
         if(m > period){
@@ -210,9 +209,11 @@ public class TripleExponentialSmoothing {
      * @return - Initial trend - Bt[1]
      */
     private double calculateInitialTrend(List<Double> y, int period) {
+        if(y.size()<2*period){
+            return  0.0;
+        }
 
         double sum = 0;
-
         for (int i = 0; i < period; i++) {
             sum += (y.get(period + i) - y.get(i));
         }
@@ -227,7 +228,7 @@ public class TripleExponentialSmoothing {
     private List<Double> calculateSeasonalIndices(List<Double> y, int period,
                                                          int seasons) {
 
-        double[] seasonalAverage = new double[seasons];
+        double[] seasonalAverage = new double[seasons]; // every season average=[av_s]*season
         double[] seasonalIndices = new double[period];
 
         double[] averagedObservations = new double[y.size()];
