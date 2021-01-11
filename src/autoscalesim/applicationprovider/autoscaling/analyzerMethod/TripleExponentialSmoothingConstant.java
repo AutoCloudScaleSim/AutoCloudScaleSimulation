@@ -6,6 +6,9 @@ public class TripleExponentialSmoothingConstant {
     public double alpha;
     public double beta;
     public double gamma;
+    public double[] tesConsts;
+    public int selectedConst;
+    public double bias;
     Random random = new Random();
 
     public TripleExponentialSmoothingConstant(double alpha, double beta, double gamma){
@@ -17,7 +20,7 @@ public class TripleExponentialSmoothingConstant {
         if(randomize){
             init(getRandomValue(),getRandomValue(),getRandomValue());
         }else{
-            init(0.40,0.0,0.60);
+            init(0.0,0.0,0.0);
         }
     }
 
@@ -25,23 +28,28 @@ public class TripleExponentialSmoothingConstant {
         this.alpha=alpha;
         this.beta=beta;
         this.gamma=gamma;
+        tesConsts= new double[]{alpha, beta, gamma};
+        selectedConst=0;
+        bias=0.0;
+
     }
 
-    public TripleExponentialSmoothingConstant getRandomAdditiveConstant(){
-
-        double _alpha=getRandomUpperOrLower(alpha);
-        double _beta=getRandomUpperOrLower(beta);
-        double _gamma=getRandomUpperOrLower(gamma);
-        return new TripleExponentialSmoothingConstant(_alpha,_beta,_gamma);
+    public void selectTesConstRandomly(){
+        selectedConst=random.nextInt(3);
     }
 
-    private double getRandomUpperOrLower(double pConst){
-        boolean isUpper=getRandomBoolean();
-        if(isUpper){
-            return getRandomUpperValue(pConst);
-        }else{
-            return getRandomLowerValue(pConst);
-        }
+    public void selectBiasRandomly(){
+        bias=getRandomValue(0.02);
+    }
+
+    public TripleExponentialSmoothingConstant getUpperValueOfSelectedConstant(){
+        tesConsts[selectedConst]=getRandomUpperValue(tesConsts[selectedConst]);
+        return new TripleExponentialSmoothingConstant(tesConsts[0],tesConsts[1],tesConsts[2]);
+    }
+
+    public TripleExponentialSmoothingConstant getLowerValueOfSelectedConstant(){
+        tesConsts[selectedConst]=getRandomLowerValue(tesConsts[selectedConst]);
+        return new TripleExponentialSmoothingConstant(tesConsts[0],tesConsts[1],tesConsts[2]);
     }
 
     // 3 decimal point
@@ -60,7 +68,7 @@ public class TripleExponentialSmoothingConstant {
     }
 
     private double getRandomUpperValue(double pConst){
-        double valueToAdd=getRandomValue(0.02);
+        double valueToAdd=bias;
         pConst+=valueToAdd;
         if(pConst>1.0){
             pConst=1.0;
@@ -69,7 +77,7 @@ public class TripleExponentialSmoothingConstant {
     }
 
     private double getRandomLowerValue(double pConst){
-        double valueToSubtract=getRandomValue(0.02);
+        double valueToSubtract=bias;
         pConst-=valueToSubtract;
         if(pConst<0.0){
             pConst=0.0;

@@ -32,16 +32,31 @@ public class TripleExponentialSmoothingConstantTuning {
         List<Double> oldConstantsPredictions =tes.forecast(series,oldConstants,period,nPred,false);
         double oldMSE=getMeanSquaredError(series,oldConstantsPredictions);
 
-        // Can we guess better constants
-        TripleExponentialSmoothingConstant randomConstants=oldConstants.getRandomAdditiveConstant();
-        List<Double> randomConstantsPredictions =tes.forecast(series, randomConstants,period,nPred,false);
-        double newMSE=getMeanSquaredError(series,randomConstantsPredictions);
+        oldConstants.selectTesConstRandomly();
+        oldConstants.selectBiasRandomly();
+        // Can we guess better constants-
+        TripleExponentialSmoothingConstant upperConsts=oldConstants.getUpperValueOfSelectedConstant();
+        List<Double> upperConstantsPredictions =tes.forecast(series, upperConsts,period,nPred,false);
+        double upperMSE=getMeanSquaredError(series,upperConstantsPredictions);
 
-        if(oldMSE<newMSE){
-            return  oldConstants;
-        }else {
-            return randomConstants;
+        TripleExponentialSmoothingConstant lowerConsts=oldConstants.getLowerValueOfSelectedConstant();
+        List<Double> lowerConstPredictions =tes.forecast(series, lowerConsts,period,nPred,false);
+        double lowerMSE=getMeanSquaredError(series,lowerConstPredictions);
+
+        if(upperMSE<lowerMSE){
+            if(oldMSE<upperMSE){
+                return oldConstants;
+            }else{
+                return upperConsts;
+            }
+        }else{
+            if(oldMSE<lowerMSE){
+                return oldConstants;
+            }else{
+                return lowerConsts;
+            }
         }
 
     }
+
 }
