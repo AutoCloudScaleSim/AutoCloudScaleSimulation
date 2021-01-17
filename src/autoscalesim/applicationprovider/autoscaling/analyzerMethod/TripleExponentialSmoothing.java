@@ -158,7 +158,7 @@ public class TripleExponentialSmoothing {
                 double lastLevel=level,lastTrend=trend;
                 level=alpha*(val-seasonals.get(i%period)) + (1-alpha)*(lastLevel+lastTrend);
                 trend = beta * (level-lastLevel) + (1-beta)*lastTrend;
-                double seasonal = gamma*(val-level) + (1-gamma)*seasonals.get(i%period);
+                double seasonal = gamma*(val-lastLevel-lastTrend) + (1-gamma)*seasonals.get(i%period);
                 prediction=level+trend+seasonal;
                 deviations=calculatePredictedDeviations(val,prediction,predictedDeviations.get(i-1),gamma);
 
