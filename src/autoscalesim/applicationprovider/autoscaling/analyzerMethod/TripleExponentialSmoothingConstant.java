@@ -43,13 +43,15 @@ public class TripleExponentialSmoothingConstant {
     }
 
     public TripleExponentialSmoothingConstant getUpperValueOfSelectedConstant(){
-        tesConsts[selectedConst]=getRandomUpperValue(tesConsts[selectedConst]);
-        return new TripleExponentialSmoothingConstant(tesConsts[0],tesConsts[1],tesConsts[2]);
+        double tempConsts[]=tesConsts.clone();
+        tempConsts[selectedConst]=getRandomUpperValue(tempConsts[selectedConst]);
+        return new TripleExponentialSmoothingConstant(tempConsts[0],tempConsts[1],tempConsts[2]);
     }
 
     public TripleExponentialSmoothingConstant getLowerValueOfSelectedConstant(){
-        tesConsts[selectedConst]=getRandomLowerValue(tesConsts[selectedConst]);
-        return new TripleExponentialSmoothingConstant(tesConsts[0],tesConsts[1],tesConsts[2]);
+        double tempConsts[]=tesConsts.clone();
+        tempConsts[selectedConst]=getRandomLowerValue(tempConsts[selectedConst]);
+        return new TripleExponentialSmoothingConstant(tempConsts[0],tempConsts[1],tempConsts[2]);
     }
 
     // 3 decimal point
@@ -87,5 +89,9 @@ public class TripleExponentialSmoothingConstant {
 
     private boolean getRandomBoolean() {
         return random.nextBoolean();
+    }
+
+    private <T> T[] returnCopiedArray(T[] array ){
+        return array.clone();
     }
 }
