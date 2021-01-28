@@ -24,10 +24,11 @@ public class TripleExponentialSmoothingConstantTuning {
         return mse;
     }
 
-    public TripleExponentialSmoothingConstant getBestFittedConstant(List<Double> series,int period){
+    public TripleExponentialSmoothingConstant getBestFittedConstant(List<Double> pSeries,int period){
         TripleExponentialSmoothing tes=new TripleExponentialSmoothing();
         int nPred=0; // we are not predicting future now
-
+        int seriesLength=pSeries.size();
+        List<Double> series= pSeries.subList(seriesLength-Math.min(seriesLength,6*period),seriesLength);
         // forcast for current constant
         List<Double> oldConstantsPredictions =tes.forecast(series,oldConstants,period,nPred,false);
         double oldMSE=getMeanSquaredError(series,oldConstantsPredictions);

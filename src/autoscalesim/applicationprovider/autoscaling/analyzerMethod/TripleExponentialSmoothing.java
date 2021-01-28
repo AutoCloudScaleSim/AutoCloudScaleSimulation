@@ -15,17 +15,17 @@ import java.util.ArrayList;
  */
 public class TripleExponentialSmoothing {
     public ArrayList<Double> predictedUpperBound=new ArrayList<>();
+    private TripleExponentialSmoothingState tesState;
 
+    public  TripleExponentialSmoothing(){
+        tesState=null;
+    }
     /**
      * Calculates the initial values and
      * returns the forecast for the future m periods.
      *
      * @param y - Time series data.
-     * @param alpha - Exponential smoothing coefficients for level, trend,
-     *            seasonal components.
-     * @param beta - Exponential smoothing coefficients for level, trend,
-     *            seasonal components.
-     * @param gamma - Exponential smoothing coefficients for level, trend,
+     * @param tesConst - Exponential smoothing coefficients for level, trend,
      *            seasonal components.
      * @param period - A complete season's data consists of L periods. And we need
      *            to estimate the trend factor from one period to the next. To
@@ -48,26 +48,31 @@ public class TripleExponentialSmoothing {
 
         validateArguments(y, alpha, beta, gamma, period, m);
         int seasons = y.size() / period;
-
         /**
-        *calculate initial values
-        */
-        double a0 = calculateInitialLevel(y);
-        double b0 = calculateInitialTrend(y, period);
-        List<Double> initialSeasonalIndices = calculateSeasonalIndices(y, period,
-                seasons);
+         *calculate initial values
+         */
+        double initialLevel ,initialTrend ;
+        List<Double> initialSeasonalIndices;
+
+
+        if(tesState==null){
+            initialLevel = calculateInitialLevel(y);
+            initialTrend = calculateInitialTrend(y, period);
+            initialSeasonalIndices = calculateSeasonalIndices(y, period, seasons);
+            tesState=new TripleExponentialSmoothingState(initialLevel,initialTrend,initialSeasonalIndices);
+        }
 
         if (debug) {
             System.out.println(String.format(
                     "Total observations: %d, Seasons %d, Periods %d", y.size(),
                     seasons, period));
-            System.out.println("Initial level value a0: " + a0);
-            System.out.println("Initial trend value b0: " + b0);
-            System.out.println("Seasonal Indices: "+ initialSeasonalIndices);
+            System.out.println("Initial level value a0: " + tesState.initialLevel);
+            System.out.println("Initial trend value b0: " + tesState.initialTrend);
+            System.out.println("Seasonal Indices: "+tesState.initialSeasonalIndices);
         }
 
-        List<Double> forecast = calculateHoltWinters(y, a0, b0, alpha, beta, gamma,
-                initialSeasonalIndices, period, m,1.96, debug);
+        List<Double> forecast = calculateHoltWinters(y, tesState.initialLevel, tesState.initialTrend, alpha, beta, gamma,
+                tesState.initialSeasonalIndices, period, m,1.96, debug);
 
         if (debug) {
             System.out.println("Forecast"+ forecast);
@@ -128,9 +133,6 @@ public class TripleExponentialSmoothing {
                                                     List<Double> seasonals, int period, int nPreds,double scalingFactor, boolean debug){
 
         ArrayList<Double> predictions=new ArrayList<>();
-        ArrayList<Double> levels=new ArrayList<>();
-        ArrayList<Double> trends=new ArrayList<>();
-        ArrayList<Double> seasons=new ArrayList<>();
         ArrayList<Double> predictedDeviations=new ArrayList<>();
         ArrayList<Double> upperBound=new ArrayList<>();
 
@@ -145,9 +147,6 @@ public class TripleExponentialSmoothing {
                 deviations=0.0;
 
                 predictions.add(prediction);
-                levels.add(level);
-                trends.add(trend);
-                seasons.add(seasonals.get(i%period));
                 predictedDeviations.add(deviations);
                 upperBound.add(calculateUpperbound(prediction,deviations,scalingFactor));
                 continue;
@@ -158,7 +157,7 @@ public class TripleExponentialSmoothing {
                 double lastLevel=level,lastTrend=trend;
                 level=alpha*(val-seasonals.get(i%period)) + (1-alpha)*(lastLevel+lastTrend);
                 trend = beta * (level-lastLevel) + (1-beta)*lastTrend;
-                double seasonal = gamma*(val-level) + (1-gamma)*seasonals.get(i%period);
+                double seasonal = gamma*(val-lastLevel-lastTrend) + (1-gamma)*seasonals.get(i%period);
                 prediction=level+trend+seasonal;
                 deviations=calculatePredictedDeviations(val,prediction,predictedDeviations.get(i-1),gamma);
 
