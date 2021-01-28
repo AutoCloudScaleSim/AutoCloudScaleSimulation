@@ -126,7 +126,7 @@ public class ExperimentalSetup {
             double sESAlpha[] = {0.2, 0, 0, 0, 0.1, 0, 0, 0, 0, 0}; //NASA=0.2, Wikipedia=0.1
            
             //How many monitored items of a parameter should be used to analyze by complex methods?
-            int timeWindow = 5*1440; //Wikipedia =5, NASA= scalingInterval
+            int timeWindow = 6*1440; //Wikipedia =5, NASA= scalingInterval
             
             Analyzer analyzer = new Analyzer(analysisMethod, timeWindow, sESAlpha);
             
