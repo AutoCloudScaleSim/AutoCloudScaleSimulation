@@ -20,7 +20,7 @@ public class TripleExponentialSmoothingConstant {
         if(randomize){
             init(getRandomValue(),getRandomValue(),getRandomValue());
         }else{
-            init(0.0,0.0,0.0);
+            init(0.4,0.0,0.6);
         }
     }
 

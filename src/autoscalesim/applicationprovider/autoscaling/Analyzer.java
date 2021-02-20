@@ -33,6 +33,16 @@ import org.cloudbus.cloudsim.Log;
  * Its action is to use simple or complex methods to analyze all parameters.
  * Its outputs are a more accurate value for each parameter.
  */
+
+class DoubleExpState{
+    double level;
+    double trend;
+    DoubleExpState(){
+        level=Double.MIN_VALUE;
+        trend=Double.MIN_VALUE;
+    }
+}
+
 public class Analyzer {
     
     private ArrayList<AnalyzerHistory> historyList;
@@ -40,13 +50,34 @@ public class Analyzer {
     private String[] analysisMethod;
     private final int timeWindow;
     private final double[] sESAlpha;
-    private double oldSESOutput;
+    private double beta=0.3;
     private int tesStartLimit=2*1440;
-    private double alpha=0.40;
-    private double beta=0.0;
-    private double gamma=0.60;
-    private int period=1440;
-    private int nPred=30;
+    private double[] oldSESOutput={
+            Double.MIN_VALUE,
+            Double.MIN_VALUE,
+            Double.MIN_VALUE,
+            Double.MIN_VALUE,
+            Double.MIN_VALUE,
+            Double.MIN_VALUE,
+            Double.MIN_VALUE,
+            Double.MIN_VALUE,
+            Double.MIN_VALUE,
+            Double.MIN_VALUE
+
+    };
+
+    private DoubleExpState[] oldDESState={
+            new DoubleExpState(),
+            new DoubleExpState(),
+            new DoubleExpState(),
+            new DoubleExpState(),
+            new DoubleExpState(),
+            new DoubleExpState(),
+            new DoubleExpState(),
+            new DoubleExpState(),
+            new DoubleExpState(),
+            new DoubleExpState()
+    };
 
     private TripleExponentialSmoothingConstant[] TES_CONSTANTS= {
             new TripleExponentialSmoothingConstant(false), //ANLZ_CPUUtil
@@ -60,6 +91,7 @@ public class Analyzer {
             new TripleExponentialSmoothingConstant(false) , //ANLZ_FailedCloudlet
             new TripleExponentialSmoothingConstant(false) , //ANLZ_FutureWorkload
     };
+
 
     private int TES_PERIOD=1440;
     private int TES_nPREDICTIONS=30;
@@ -82,7 +114,6 @@ public class Analyzer {
         
         this.timeWindow = timeWindow;
         this.sESAlpha = sESAlpha;
-        this.oldSESOutput = Double.MIN_VALUE;
         
     }
     
@@ -198,8 +229,8 @@ public class Analyzer {
                 
             // Single exponential smoothing
             case "COMPLEX_SES":
-                analyzedCPUUtilization = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[0]);
-                oldSESOutput = analyzedCPUUtilization;
+                analyzedCPUUtilization = calculateSingleExponentialSmoothing(parameter, oldSESOutput[0], sESAlpha[0]);
+                oldSESOutput[0] = analyzedCPUUtilization;
                 break;
             default:
                 analyzedCPUUtilization=TripleExponentialSmoothingVariant(AnalyzerParameter.CPUUtil,tesHistory,parameter);
@@ -256,8 +287,8 @@ public class Analyzer {
                 
             // Single exponential smoothing
             case "COMPLEX_SES":
-                analyzedVmCount = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[1]);
-                oldSESOutput = analyzedVmCount;
+                analyzedVmCount = calculateSingleExponentialSmoothing(parameter, oldSESOutput[1], sESAlpha[1]);
+                oldSESOutput[1] = analyzedVmCount;
                 break;
             default:
                 analyzedVmCount=TripleExponentialSmoothingVariant(AnalyzerParameter.VMCount,tesHistory,parameter);
@@ -314,8 +345,8 @@ public class Analyzer {
                 
             // Single exponential smoothing
             case "COMPLEX_SES":
-                analyzedThroughput = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[2]);
-                oldSESOutput = analyzedThroughput;
+                analyzedThroughput = calculateSingleExponentialSmoothing(parameter, oldSESOutput[2], sESAlpha[2]);
+                oldSESOutput[2] = analyzedThroughput;
                 break;
             default:
                 analyzedThroughput=TripleExponentialSmoothingVariant(AnalyzerParameter.Throughput,tesHistory,parameter);
@@ -372,8 +403,8 @@ public class Analyzer {
                 
             // Single exponential smoothing
             case "COMPLEX_SES":
-                analyzedResponseTime = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[3]);
-                oldSESOutput = analyzedResponseTime;
+                analyzedResponseTime = calculateSingleExponentialSmoothing(parameter, oldSESOutput[3], sESAlpha[3]);
+                oldSESOutput[3] = analyzedResponseTime;
                 break;
             default:
                 analyzedResponseTime=TripleExponentialSmoothingVariant(AnalyzerParameter.ResponseTime,tesHistory,parameter);
@@ -430,8 +461,8 @@ public class Analyzer {
                 
             // Single exponential smoothing
             case "COMPLEX_SES":
-                analyzedDelayTime = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[4]);
-                oldSESOutput = analyzedDelayTime;
+                analyzedDelayTime = calculateSingleExponentialSmoothing(parameter, oldSESOutput[4], sESAlpha[4]);
+                oldSESOutput[4] = analyzedDelayTime;
                 break;
             default:
                 analyzedDelayTime=TripleExponentialSmoothingVariant(AnalyzerParameter.DelayTime,tesHistory,parameter);
@@ -488,8 +519,8 @@ public class Analyzer {
                 
             // Single exponential smoothing
             case "COMPLEX_SES":
-                analyzedSLAVCount = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[5]);
-                oldSESOutput = analyzedSLAVCount;
+                analyzedSLAVCount = calculateSingleExponentialSmoothing(parameter, oldSESOutput[5], sESAlpha[5]);
+                oldSESOutput[5] = analyzedSLAVCount;
                 break;
             default:
                 analyzedSLAVCount=TripleExponentialSmoothingVariant(AnalyzerParameter.SLAVCount,tesHistory,parameter);
@@ -547,8 +578,8 @@ public class Analyzer {
                 
             // Single exponential smoothing
             case "COMPLEX_SES":
-                analyzedSLAVPercentage = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[6]);
-                oldSESOutput = analyzedSLAVPercentage;
+                analyzedSLAVPercentage = calculateSingleExponentialSmoothing(parameter, oldSESOutput[6], sESAlpha[6]);
+                oldSESOutput[6] = analyzedSLAVPercentage;
                 break;
             default:
                 analyzedSLAVPercentage=TripleExponentialSmoothingVariant(AnalyzerParameter.SLAVPercentage,tesHistory,parameter);
@@ -605,8 +636,8 @@ public class Analyzer {
                 
             // Single exponential smoothing
             case "COMPLEX_SES":
-                analyzedSLAVTime = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[7]);
-                oldSESOutput = analyzedSLAVTime;
+                analyzedSLAVTime = calculateSingleExponentialSmoothing(parameter, oldSESOutput[7], sESAlpha[7]);
+                oldSESOutput[7] = analyzedSLAVTime;
                 break;
             default:
                 analyzedSLAVTime=TripleExponentialSmoothingVariant(AnalyzerParameter.SLAVTime,tesHistory,parameter);
@@ -664,8 +695,8 @@ public class Analyzer {
                 
             // Single exponential smoothing
             case "COMPLEX_SES":
-                analyzedFailedCloudlet = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[8]);
-                oldSESOutput = analyzedFailedCloudlet;
+                analyzedFailedCloudlet = calculateSingleExponentialSmoothing(parameter, oldSESOutput[8], sESAlpha[8]);
+                oldSESOutput[8] = analyzedFailedCloudlet;
                 break;
             default:
                 analyzedFailedCloudlet=TripleExponentialSmoothingVariant(AnalyzerParameter.FailedCloudlet,tesHistory,parameter);
@@ -723,8 +754,8 @@ public class Analyzer {
                 
             // Single exponential smoothing
             case "COMPLEX_SES":
-                analyzedFutureWorkload = calculateSingleExponentialSmoothing(parameter, oldSESOutput, sESAlpha[9]);
-                oldSESOutput = analyzedFutureWorkload;
+                analyzedFutureWorkload = calculateSingleExponentialSmoothing(parameter, oldSESOutput[9], sESAlpha[9]);
+                oldSESOutput[9] = analyzedFutureWorkload;
                 break;
             default:
                 analyzedFutureWorkload=TripleExponentialSmoothingVariant(AnalyzerParameter.FutureWorkload,tesHistory,parameter);
@@ -754,28 +785,39 @@ public class Analyzer {
 
         switch (getAnalysisMethod()[index]){
             case "TES":
-                if(history.length < this.tesStartLimit)
-                    analyzedValue=parameter;
+                if(history.length < this.tesStartLimit){
+                    analyzedValue = calculateDoubleExponentialSmoothing(parameter,oldDESState[index],sESAlpha[index],beta);
+                    oldSESOutput[index] = analyzedValue;
+                }
                 else
                     analyzedValue =calculateTripleExponentialSmoothing(data,tesConst,TES_PERIOD,TES_nPREDICTIONS);
                 break;
             case "TES_UPPERBOUND":
-                if(history.length < this.tesStartLimit)
-                    analyzedValue=parameter;
+                if(history.length < this.tesStartLimit){
+                    analyzedValue = calculateDoubleExponentialSmoothing(parameter,oldDESState[index],sESAlpha[index],beta);
+                    oldSESOutput[index] = analyzedValue;
+                }
                 else
                     analyzedValue =calculateTripleExponentialSmoothingUsingUpperBound(data,tesConst,TES_PERIOD,TES_nPREDICTIONS);
                 break;
             case "AVERAGE_TES":
-                if(history.length < this.tesStartLimit)
-                    analyzedValue=parameter;
+                if(history.length < this.tesStartLimit){
+                    analyzedValue = calculateDoubleExponentialSmoothing(parameter,oldDESState[index],sESAlpha[index],beta);
+                    oldSESOutput[index] = analyzedValue;
+                }
                 else
                     analyzedValue =calculateAverageTripleExponentialSmoothing(data,tesConst,TES_PERIOD,TES_nPREDICTIONS);
                 break;
             case "AVERAGE_TES_UPPERBOUND":
-                if(history.length < this.tesStartLimit)
-                    analyzedValue=parameter;
+                if(history.length < this.tesStartLimit){
+                    analyzedValue = calculateDoubleExponentialSmoothing(parameter,oldDESState[index],sESAlpha[index],beta);
+                    oldSESOutput[index] = analyzedValue;
+                }
                 else
                     analyzedValue =calculateAverageTripleExponentialSmoothingUsingUpperBound(data,tesConst, TES_PERIOD,TES_nPREDICTIONS);
+                break;
+            case "DES":
+                analyzedValue = calculateDoubleExponentialSmoothing(parameter,oldDESState[index],sESAlpha[index],beta);
                 break;
             default:
                 errorChecker = true;
@@ -847,6 +889,19 @@ public class Analyzer {
             oldSESOutput = parameter;
         
         return (alpha * parameter) + ((1 - alpha) * oldSESOutput);
+    }
+
+    private double calculateDoubleExponentialSmoothing(double parameter, DoubleExpState oldDoubleExpState, double alpha,double beta){
+        if (oldDoubleExpState.level == Double.MIN_VALUE)
+            oldDoubleExpState.level = parameter;
+        if (oldDoubleExpState.trend == Double.MIN_VALUE)
+            oldDoubleExpState.trend = parameter;
+
+        double newLevel = alpha*parameter + (1-alpha)*(oldDoubleExpState.level-oldDoubleExpState.trend);
+        double newTrend = beta * (newLevel-oldDoubleExpState.level) + (1-beta)*oldDoubleExpState.trend;
+        oldDoubleExpState.level = newLevel;
+        oldDoubleExpState.trend = newTrend;
+        return newLevel+newTrend;
     }
 
     private double calculateTripleExponentialSmoothing(List<Double> data,TripleExponentialSmoothingConstant tesConst,int period,int nPredictions){

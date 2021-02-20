@@ -192,7 +192,7 @@ public class TripleExponentialSmoothing {
      * @return - Calculate upperbound of predictions
      */
     private double calculateUpperbound(double predictedValue,double predictedDeviations,double scalingFactor){
-        return predictedValue+scalingFactor*predictedDeviations;
+        return predictedValue+.3+scalingFactor*predictedDeviations;
     }
 
     /**

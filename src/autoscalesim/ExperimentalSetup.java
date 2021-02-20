@@ -110,16 +110,17 @@ public class ExperimentalSetup {
         /* Analyzer */
             // The method by which each parameter must be analyzed is set here:
             String[] analysisMethod = new String[]{
-                Method.AVERAGE_TES.name(),//[0] method for analyzing 'CPU utilization' parameter
-                Method.AVERAGE_TES.name(),//[1] method for analyzing 'Vm count' parameter
-                Method.AVERAGE_TES.name(),//[2] method for analyzing 'Throughput' parameter
-                Method.AVERAGE_TES.name(),//[3] method for analyzing 'Response Time' parameter
-                Method.AVERAGE_TES.name(),//[4] method for analyzing 'Delay time' parameter
-                Method.AVERAGE_TES.name(),//[5] method for analyzing 'SLA violation Count' parameter
-                Method.AVERAGE_TES.name(),//[6] method for analyzing 'SLA violation percent parameter'
-                Method.AVERAGE_TES.name(),//[7] method for analyzing 'SLA violation time' parameter
-                Method.AVERAGE_TES.name(),//[8] method for analyzing 'Failed Cloudlets' parameter
-                Method.AVERAGE_TES.name()};//[9] method for analyzing 'Future Workload' parameter
+                Method.SIMPLE.name(),// [0] method for analyzing 'CPU utilization' parameter
+                Method.SIMPLE.name(),// [1] method for analyzing 'Vm count' parameter
+                Method.SIMPLE.name(),// [2] method for analyzing 'Throughput' parameter
+                Method.SIMPLE.name(),// [3] method for analyzing 'Response Time' parameter
+                Method.SIMPLE.name(),// [4] method for analyzing 'Delay time' parameter
+                Method.SIMPLE.name(),// [5] method for analyzing 'SLA violation Count' parameter
+                Method.SIMPLE.name(),// [6] method for analyzing 'SLA violation percent parameter'
+                Method.SIMPLE.name(),// [7] method for analyzing 'SLA violation time' parameter
+                Method.SIMPLE.name(),// [8] method for analyzing 'Failed Cloudlets' parameter
+                Method.SIMPLE.name() // [9] method for analyzing 'Future Workload' parameter
+            };
                     
             /*Alpha in single exponential smoothing, each index is for one analyzing parameter,
             e.g., [0] is for CPU util. */
@@ -461,8 +462,8 @@ public class ExperimentalSetup {
         TES,
         TES_UPPERBOUND,
         AVERAGE_TES,
-        AVERAGE_TES_UPPERBOUND;
-
+        AVERAGE_TES_UPPERBOUND,
+        DES;
     }
     public enum ScalingRule {
         /* please cite: https://ieeexplore.ieee.org/abstract/document/7498443/ */
